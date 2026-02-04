@@ -1,23 +1,60 @@
 const express = require("express");
 const dbConnect = require("./config/database");
-const User = require("./models/user")
+const User = require("./models/user");
 
 const app = express();
 
-app.post('/signup', async (req,res) =>{
-    const user = new User({
-        firstName: "John",
-        lastName: "Doe",
-        email: "john.doe@example.com",
-        age: 28,
-        password: "securepassword",
-    })
-    try {
-        const savedUser = await user.save();
-        res.status(201).json(savedUser);
-    } catch (err) {
-        res.status(400).json({ message: err.message });
+app.use(express.json());
+
+app.post("/signup", async (req, res) => {
+  const user = new User(
+    req.body,
+    // firstName: "John",
+    // lastName: "Doe",
+    // email: "john.doe@example.com",
+    // age: 28,
+    // password: "securepassword",
+  );
+  try {
+    const savedUser = await user.save();
+    res.status(201).json(savedUser);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
+app.get("/feed", async (req, res) => {
+  try {
+    const users = await User.find();
+    res.send(users);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+app.delete("/user", async (req, res) => {
+  try {
+    const userId = req.body.userId;
+    const result = await User.findByIdAndDelete(userId);
+    if (!result) {
+      return res.status(404).json({ message: "User not found." });
     }
+    return res.status(200).json({ message: "User deleted successfully." });
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+});
+
+app.patch("/user", async (req, res) => {
+  const userId =  req.body.userId;
+  const data = req.body;
+  try{
+    const user = await User.findByIdAndUpdate({_id: userId}, data);
+    res.send("user updated successfully");
+  }
+  catch(err){
+    return res.status(400).send("something went wrong");
+  }
 })
 
 dbConnect()
