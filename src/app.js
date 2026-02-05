@@ -1,27 +1,53 @@
 const express = require("express");
 const dbConnect = require("./config/database");
 const User = require("./models/user");
+const { validateData } = require("./utils/validate");
+const bcrypt = require("bcrypt");
 
 const app = express();
 
 app.use(express.json());
 
 app.post("/signup", async (req, res) => {
-  const user = new User(
-    req.body,
-    // firstName: "John",
-    // lastName: "Doe",
-    // email: "john.doe@example.com",
-    // age: 28,
-    // password: "securepassword",
-  );
   try {
+    validateData(req);
+    const { firstName, lastName, email, password } = req.body;
+    const passHash = await bcrypt.hash(password, 10);
+    const user = new User(
+      { firstName, lastName, email, password: passHash },
+      // firstName: "John",
+      // lastName: "Doe",
+      // email: "john.doe@example.com",
+      // age: 28,
+      // password: "securepassword",
+    );
+
     const savedUser = await user.save();
     res.status(201).json(savedUser);
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
 });
+
+app.post("/login", async(req,res)=>{
+  try{
+    const{email, password} = req.body;
+    // validateData(req);
+    const user = await User.findOne({email: email});
+    if(!user){
+      throw new Error("User not found");
+    }
+    const isPasswordValid = await bcrypt.compare(password, user.password)
+    if(isPasswordValid){
+      res.send("Login successful");
+    } else{
+      throw new Error("Invalid password");
+    }
+  }
+  catch(err){
+    res.status(400).json({ message: err.message });
+  }
+})
 
 app.get("/feed", async (req, res) => {
   try {
@@ -46,33 +72,31 @@ app.delete("/user", async (req, res) => {
 });
 
 app.patch("/user/:userId", async (req, res) => {
-  const userId =  req.params?.userId;
+  const userId = req.params?.userId;
   const data = req.body;
-  try{
-
+  try {
     const UpdatedData = ["gender", "skills", "photoURL", "about"];
-    const isAllowedUpdates = Object.keys(data).every((k)=>{
+    const isAllowedUpdates = Object.keys(data).every((k) => {
       UpdatedData.includes(k);
-    })
+    });
 
-    if(!isAllowedUpdates){
+    if (!isAllowedUpdates) {
       throw new Error("Invalid updates!");
     }
 
-    if(data?.skills.length > 10){
+    if (data?.skills.length > 10) {
       throw new Error("Skills cannot be more than 10!");
     }
 
-    const user = await User.findByIdAndUpdate({_id: userId}, data, {
+    const user = await User.findByIdAndUpdate({ _id: userId }, data, {
       returnDocument: "after",
-      runValidators: true
+      runValidators: true,
     });
     res.send("user updated successfully");
-  }
-  catch(err){
+  } catch (err) {
     return res.status(400).send("something went wrong");
   }
-})
+});
 
 dbConnect()
   .then(() => {
