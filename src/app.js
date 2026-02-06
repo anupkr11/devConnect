@@ -42,11 +42,10 @@ app.post("/login", async (req, res) => {
     if (!user) {
       throw new Error("User not found");
     }
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    const isPasswordValid = await user.passwordMatches(password);
     if (isPasswordValid) {
       //create jwt token
-      const token = await jwt.sign({ _id: user._id }, "secretkey", { expiresIn: "1h" });
-
+      const token = await user.getJWTToken();
       //add the token to cookie and send response back to client
       res.cookie("token", token, {expires: new Date(Date.now() + 3600000)});
 
