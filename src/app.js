@@ -1,72 +1,19 @@
 const express = require("express");
 const dbConnect = require("./config/database");
-const User = require("./models/user");
-const { validateData } = require("./utils/validate");
-const bcrypt = require("bcrypt");
 const cookieParser = require("cookie-parser");
-const jwt = require("jsonwebtoken");
-const { userAuth } = require("./middlewares/auth");
-
 const app = express();
 
 //middilewares to parse data into specified format and to handle cookies
 app.use(express.json());
 app.use(cookieParser());
 
-app.post("/signup", async (req, res) => {
-  try {
-    validateData(req);
-    const { firstName, lastName, email, password } = req.body;
-    const passHash = await bcrypt.hash(password, 10);
-    const user = new User(
-      { firstName, lastName, email, password: passHash },
-      // firstName: "John",
-      // lastName: "Doe",
-      // email: "john.doe@example.com",
-      // age: 28,
-      // password: "securepassword",
-    );
+const authRouter = require("./routes/auth");
+const profileRouter = require("./routes/profile");
+const requestRouter = require("./routes/request");
 
-    const savedUser = await user.save();
-    res.status(201).json(savedUser);
-  } catch (err) {
-    res.status(400).json({ message: err.message });
-  }
-});
-
-app.post("/login", async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    // validateData(req);
-    const user = await User.findOne({ email: email });
-    if (!user) {
-      throw new Error("User not found");
-    }
-    const isPasswordValid = await user.passwordMatches(password);
-    if (isPasswordValid) {
-      //create jwt token
-      const token = await user.getJWTToken();
-      //add the token to cookie and send response back to client
-      res.cookie("token", token, {expires: new Date(Date.now() + 3600000)});
-
-      res.send("Login successful");
-    } else {
-      throw new Error("Invalid password");
-    }
-  } catch (err) {
-    res.status(400).send("Login failed: " + err.message);
-  }
-});
-
-app.get("/profile", userAuth, async (req, res) => {
-  try {
-    const user = req.user;
-
-    res.send(user);
-  } catch (err) {
-    res.status(400).send("Error fetching profile: " + err.message);
-  }
-});
+app.use("/", authRouter);
+app.use("/", profileRouter);
+app.use("/", requestRouter);
 
 dbConnect()
   .then(() => {
