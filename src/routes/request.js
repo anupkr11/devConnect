@@ -53,4 +53,27 @@ requestRouter.post("/request/send/:status/:toUserId", userAuth, async(req,res) =
     }
 })
 
+requestRouter.post("/request/review/:status/:requestId", userAuth, async(req,res) =>{
+    try{
+        // Validate status
+        const status = req.params.status;
+        const validStatus = ["accepted", "rejected"];
+        if(!validStatus.includes(status)){
+            return res.status(400).send("Invalid status type. Allowed values are 'accepted' and 'rejected'.");
+        }
+        // Check if the connection request exists and belongs to the user
+        const requestId = req.params.requestId;
+        const connectionReq = await ConnectionRequest.findOne({ _id: requestId, toUserId: req.user._id, status: "interested" });
+        if(!connectionReq){
+            return res.status(404).send("Connection request not found or does not belong to the user.");
+        }
+        connectionReq.status = status;
+        const data = await connectionReq.save();
+        res.json({ message: "Connection request reviewed successfully", data });
+    }
+    catch(err){
+        res.status(400).send("Error reviewing connection request: " + err.message);
+    }
+})
+
 module.exports = requestRouter;
