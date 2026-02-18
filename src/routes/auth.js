@@ -9,10 +9,10 @@ const { validateData } = require("../utils/validate");
 authRouter.post("/signup", async (req, res) => {
   try {
     validateData(req);
-    const { firstName, lastName, email, password } = req.body;
+    const { firstName, lastName, email, password, about, photoURL } = req.body;
     const passHash = await bcrypt.hash(password, 10);
     const user = new User(
-      { firstName, lastName, email, password: passHash },
+      { firstName, lastName, email, password: passHash, about, photoURL },
       // firstName: "John",
       // lastName: "Doe",
       // email: "john.doe@example.com",
@@ -42,7 +42,7 @@ authRouter.post("/login", async (req, res) => {
       //add the token to cookie and send response back to client
       res.cookie("token", token, {expires: new Date(Date.now() + 3600000)});
 
-      res.send("Login successful");
+      res.send(user);
     } else {
       throw new Error("Invalid password");
     }
