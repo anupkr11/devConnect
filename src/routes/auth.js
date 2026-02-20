@@ -9,10 +9,10 @@ const { validateData } = require("../utils/validate");
 authRouter.post("/signup", async (req, res) => {
   try {
     validateData(req);
-    const { firstName, lastName, email, password, about, photoURL } = req.body;
+    const { firstName, lastName, email, password, about, photoURL, age, gender } = req.body;
     const passHash = await bcrypt.hash(password, 10);
     const user = new User(
-      { firstName, lastName, email, password: passHash, about, photoURL },
+      { firstName, lastName, email, password: passHash, about, photoURL, age, gender },
       // firstName: "John",
       // lastName: "Doe",
       // email: "john.doe@example.com",
